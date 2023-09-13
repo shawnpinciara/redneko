@@ -57,6 +57,11 @@ mixer = audiomixer.Mixer(voice_count=4, sample_rate=22050, channel_count=1,bits_
 audio = AudioOut(board.GP0)
 audio.play(mixer)
 
+#PROGRAM VARIABLES
+sequence1 = [1,0,0,0] #kick
+sequence2 = [0,0,1,0] #snare
+sequence3 = [1,1,1,1] #hihat
+
 i = 0
 
 audio.play(mixer)
@@ -78,18 +83,21 @@ def play_sound_and_light(ss,i):
         pass
     leds[i].value = False
 
-
+j = 0
 while True:
-    set_led(0,True)
-    play_sound(0,kick)
-    play_sound(2,hihat)
-    wait(bpm_millis)
-    set_led(0,False)
+    if (j>3):
+        j=0
+    set_led(j,True)
+    if (sequence1[j]==1):
+        play_sound(0,kick)
+    if (sequence2[j]==1):
+        play_sound(2,snare)
+    if (sequence3[j]==1):
+        play_sound(2,hihat)
 
-    set_led(1,True)
-    play_sound(2,hihat)
     wait(bpm_millis)
-    set_led(1,False)
+    set_led(j,False)
+    j+=1
 
 
 
