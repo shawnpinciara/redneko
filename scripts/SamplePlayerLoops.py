@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: MIT
 
 """CircuitPython Essentials Audio Out WAV example"""
-import time, board,digitalio,audiomixer
+import time, board,digitalio,audiomixer,analogio
 from audiocore import WaveFile
-from adafruit_ticks import ticks_ms, ticks_add, ticks_less
+from adafruit_ticks import ticks_ms, ticks_add, ticks_less, ticks_diff
 
 
 try:
@@ -37,6 +37,8 @@ btn4 = digitalio.DigitalInOut(board.GP6)
 btn4.switch_to_input(pull=digitalio.Pull.UP)
 led4 = digitalio.DigitalInOut(board.GP5)
 led4.direction = digitalio.Direction.OUTPUT
+pot1 = analogio.AnalogIn(board.GP28_A2) #to read it: pot1.value 0 to 65535
+#pot2 = analogio.AnalogIn(board.GP26_A0)
 
 btns = [btn1,btn2,btn3,btn4]
 leds = [led1,led2,led3,led4]
@@ -60,8 +62,10 @@ audio.play(mixer)
 #PROGRAM VARIABLES
 sequence1 = [1,0,0,0] #kick
 sequence2 = [0,0,1,0] #snare
-sequence3 = [1,1,1,1] #hihat
-
+sequence3 = [0,0,0,0] #hihat
+mode = 0 #0=play,1=sound,2=sequence,3=layer
+play = True
+btn1_debounce = True
 i = 0
 
 audio.play(mixer)
@@ -88,16 +92,40 @@ while True:
     if (j>3):
         j=0
     set_led(j,True)
-    if (sequence1[j]==1):
-        play_sound(0,kick)
-    if (sequence2[j]==1):
-        play_sound(2,snare)
-    if (sequence3[j]==1):
-        play_sound(2,hihat)
+    if play==True:
+        if (sequence1[j]==1):
+            play_sound(0,kick)
+        if (sequence2[j]==1):
+            play_sound(2,snare)
+        if (sequence3[j]==1):
+            play_sound(2,hihat)
+    start_timer = ticks_ms() #start timer
+    #DO STUFF HERE
+    #bisogna sperare che il codice qua in mezzo esegua in meno tempo di un battito
+    pot1_value = pot1.value
+    if pot1_value < 13107:
+        mode = 0 #play
+    elif pot1_value < 26214:
+        mode = 1 #sound
+    elif pot1_value < 39321:
+        mode = 2 #pattern
+    elif pot1_value < 52428:
+        mode = 3
+    else:
+        mode = 4
 
+    if btn1.value == False and btn1_debounce==True:
+        btn1_debounce = False
+        #check mode and answer correctly
+        print("pressed")
+        if mode == 0:
+            play = not play
+    if btn1.value == True:
+        btn1_debounce = True
+
+    #
+    #FINISH TO DO STUFF HERE
     wait(bpm_millis)
     set_led(j,False)
     j+=1
-
-
-
+    start_timer = 0
