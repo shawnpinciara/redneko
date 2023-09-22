@@ -1,7 +1,6 @@
-import time, board, digitalio, audiomixer, analogio
+import time, board, digitalio, audiomixer, analogio,neopixel,asyncio
 from audiocore import WaveFile
 from adafruit_ticks import ticks_ms, ticks_add, ticks_less, ticks_diff
-import asyncio
 
 
 try:
@@ -17,7 +16,7 @@ bpm_millis = int((60 * 1000) / bpm)
 bpm_float = 60 / bpm
 
 
-# INPUTS
+# I/O
 btn1 = digitalio.DigitalInOut(board.GP27)
 btn1.switch_to_input(pull=digitalio.Pull.UP)
 led1 = digitalio.DigitalInOut(board.GP26)
@@ -51,10 +50,15 @@ btn8.switch_to_input(pull=digitalio.Pull.UP)
 led8 = digitalio.DigitalInOut(board.GP2)
 led8.direction = digitalio.Direction.OUTPUT
 
-current_btn_value = 0
+pixels = neopixel.NeoPixel(board.NEOPIXEL, 1,auto_write=False)
+pixels[0] = (10, 100, 20)
+
+current_btn_value = 1
+prev_value = 1
 
 pot1 = analogio.AnalogIn(board.GP28_A2)  # to read it: pot1.value 0 to 65535
-# pot2 = analogio.AnalogIn(board.GP26_A0)
+pot1_value = 0
+pot1 = analogio.AnalogIn(board.GP29_A3)  # to read it: pot1.value 0 to 65535
 
 btns = [btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8]
 leds = [led1, led2, led3, led4, led5, led6, led7, led8]
@@ -128,54 +132,6 @@ def mapp(value, leftMin, leftMax, rightMin, rightMax):
     return rightMin + (valueScaled * rightSpan)
 
 
-j = 0
-# while True:
-#     if (j>3):
-#         j=0
-#     set_led(j,True)
-#     if play==True:
-#         if (sequence1[j]==1):
-#             play_sound(0,kick)
-#         if (sequence2[j]==1):
-#             play_sound(2,snare)
-#         if (sequence3[j]==1):
-#             play_sound(2,hihat)
-#     start_timer = ticks_ms() #start timer
-#     DO STUFF HERE
-#     bisogna sperare che il codice qua in mezzo esegua in meno tempo di un battito
-#     pot1_value = mapp(pot1.value,65535,0,0,65535)
-#     bpm = mapp(pot1_value,0,65535,40,300)
-#     if pot1_value < 13107:
-#         mode = 0 #play
-#     elif pot1_value < 26214:
-#         mode = 1 #sound
-#     elif pot1_value < 39321:
-#         mode = 2 #pattern
-#     elif pot1_value < 52428:
-#         mode = 3
-#     else:
-#         mode = 4
-
-#     if btn1.value == False and btn1_debounce==True:
-#         btn1_debounce = False
-#         check mode and answer correctly
-#         print(pot1_value)
-
-#         if mode == 0:
-#             play = not play
-#         if mode == 1:
-#             sequence1[0] = not sequence1[0]
-#     if btn1.value == True:
-#         btn1_debounce = True
-
-
-#     FINISH TO DO STUFF HERE
-#     wait(bpm_millis)
-#     set_led(j,False)
-#     j+=1
-#     start_timer = 0
-
-
 async def play_sound_async(delay, mixer_voice, ssound):
     while True:
         mixer.voice[mixer_voice].play(ssound)
@@ -208,14 +164,19 @@ async def update_pot_value_async(delay):
     pot1_value = mapp(pot1.value, 65535, 0, 0, 65535)
     if pot1_value < 13107:
         mode = 0  # play
+        pixels[0] = (10, 100, 20)
     elif pot1_value < 26214:
         mode = 1  # sound
+        pixels[0] = (10, 200, 20)
     elif pot1_value < 39321:
         mode = 2  # pattern
     elif pot1_value < 52428:
         mode = 3
+        pixels[0] = (100, 30, 20)
     else:
+        pixels[0] = (10, 100, 100)
         mode = 4
+    #TODO: add MODE t
     await asyncio.sleep(delay)
 
 
@@ -237,9 +198,12 @@ async def main():
     asyncio.create_task(play_sound_and_light_async(bpm_float, hihat, 2, sequence3))
 
     asyncio.create_task(update_pot_value_async(0.4))
+    #asyncio.create_task(btn1_async(0.3)
 
     while True:
-        print("done")
+        pot1_value = mapp(pot1.value, 65535, 0, 0, 65535)
+        print(pot1.value)
+        pixels.show()
         await asyncio.sleep(1)
 
 

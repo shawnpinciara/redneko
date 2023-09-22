@@ -1,0 +1,46 @@
+while True:
+    if (j>3):
+        j=0
+    set_led(j,True)
+    if play==True:
+        if (sequence1[j]==1):
+            play_sound(0,kick)
+        if (sequence2[j]==1):
+            play_sound(2,snare)
+        if (sequence3[j]==1):
+            play_sound(2,hihat)
+    start_timer = ticks_ms() #start timer
+    DO STUFF HERE
+    bisogna sperare che il codice qua in mezzo esegua in meno tempo di un battito
+    pot1_value = mapp(pot1.value,65535,0,0,65535)
+    bpm = mapp(pot1_value,0,65535,40,300)
+    if pot1_value < 13107:
+        mode = 0 #play
+    elif pot1_value < 26214:
+        mode = 1 #sound
+    elif pot1_value < 39321:
+        mode = 2 #pattern
+    elif pot1_value < 52428:
+        mode = 3
+    else:
+        mode = 4
+
+    if btn1.value == False and btn1_debounce==True:
+        btn1_debounce = False
+        check mode and answer correctly
+        print(pot1_value)
+
+        if mode == 0:
+            play = not play
+        if mode == 1:
+            sequence1[0] = not sequence1[0]
+    if btn1.value == True:
+        btn1_debounce = True
+
+
+    FINISH TO DO STUFF HERE
+    wait(bpm_millis)
+    set_led(j,False)
+    j+=1
+    start_timer = 0
+
