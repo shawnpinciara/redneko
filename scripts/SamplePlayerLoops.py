@@ -1,6 +1,7 @@
-import time, board, digitalio, audiomixer, analogio,neopixel,asyncio
+import time, board, digitalio, audiomixer, analogio, neopixel, asyncio
 from audiocore import WaveFile
 from adafruit_ticks import ticks_ms, ticks_add, ticks_less, ticks_diff
+import queue
 
 
 try:
@@ -50,7 +51,7 @@ btn8.switch_to_input(pull=digitalio.Pull.UP)
 led8 = digitalio.DigitalInOut(board.GP2)
 led8.direction = digitalio.Direction.OUTPUT
 
-pixels = neopixel.NeoPixel(board.NEOPIXEL, 1,auto_write=False)
+pixels = neopixel.NeoPixel(board.NEOPIXEL, 1, auto_write=False)
 pixels[0] = (10, 100, 20)
 
 current_btn_value = 1
@@ -86,9 +87,9 @@ audio = AudioOut(board.GP0)
 audio.play(mixer)
 
 # PROGRAM VARIABLES
-sequence1 = [1, 0, 0, 1, 0, 1, 0, 0]  # kick
-sequence2 = [0, 0, 1, 0, 0, 0, 1, 0]  # snare
-sequence3 = [1, 1, 0, 1, 1, 1, 0, 1]  # hihat
+sequence1 = [1,0,0,0,1,1,0,0]  # kick
+sequence2 = [0,0,1,0,0,0,1,0]  # snare
+sequence3 = [1,1,0,1,1,1,0,1]  # hihat
 mode = 0  # 0=play,1=sound,2=sequence,3=layer
 play = True
 btn1_debounce = True
@@ -101,6 +102,11 @@ def wait(time):
     deadline = ticks_add(ticks_ms(), time)
     while ticks_less(ticks_ms(), deadline):
         pass
+
+
+def truncate_float(float_number, decimal_places):
+    multiplier = 10 ** decimal_places
+    return int(float_number * multiplier) / multiplier
 
 
 def play_sound(mixer_voice, ssound):
@@ -140,9 +146,11 @@ async def play_sound_async(delay, mixer_voice, ssound):
         )  # ogni quanto la funzione viene eseguita, lo "sleep" fa fare yeald e rilascia la cpu
 
 
-async def play_sound_and_light_async(delay, sound, mixer_voice, sequence):
+async def play_sound_and_light_async(delay, sound, mixer_voice, sequence, q):
     a = 0
     while play:
+        if not q.empty():
+            delay = await q.get()
         if a > 7:
             a = 0
         if a == 0:
@@ -153,8 +161,32 @@ async def play_sound_and_light_async(delay, sound, mixer_voice, sequence):
             mixer.voice[mixer_voice].play(sound)
             leds[a].value = True
         a += 1
+
         await asyncio.sleep(delay)  # yeald
 
+async def play_async(delay, sound1,sound2,sound3, mixer_voice1,mixer_voice2,mixer_voice3, sequence1,sequence2,sequence3, q):
+    a = 0
+    while play:
+        if not q.empty():
+            delay = await q.get()
+        if a > 7:
+            a = 0
+        if a == 0:
+            leds[7].value = False
+        if a != 0:
+            leds[a - 1].value = False
+        if sequence1[a] == 1:
+            mixer.voice[mixer_voice1].play(sound1)
+            leds[a].value = True
+        if sequence2[a] == 1:
+            mixer.voice[mixer_voice2].play(sound2)
+            leds[a].value = True
+        if sequence3[a] == 1:
+            mixer.voice[mixer_voice3].play(sound3)
+            leds[a].value = True
+        a += 1
+
+        await asyncio.sleep(delay)  # yeald
 
 def set_led_async(index, vvalue):
     leds[index].value = vvalue
@@ -176,7 +208,7 @@ async def update_pot_value_async(delay):
     else:
         pixels[0] = (10, 100, 100)
         mode = 4
-    #TODO: add MODE t
+    # TODO: add MODE t
     await asyncio.sleep(delay)
 
 
@@ -193,18 +225,22 @@ async def btn1_async(delay):  # TODO: check if it works
 
 
 async def main():
-    asyncio.create_task(play_sound_and_light_async(bpm_float, kick, 0, sequence1))
-    asyncio.create_task(play_sound_and_light_async(bpm_float, snare, 1, sequence2))
-    asyncio.create_task(play_sound_and_light_async(bpm_float, hihat, 2, sequence3))
+    q = queue.Queue()
+#     asyncio.create_task(play_sound_and_light_async(bpm_float, kick, 0, sequence1, q))
+#     asyncio.create_task(play_sound_and_light_async(bpm_float, snare, 1, sequence2, q))
+#     asyncio.create_task(play_sound_and_light_async(bpm_float, hihat, 2, sequence3, q))
 
-    asyncio.create_task(update_pot_value_async(0.4))
-    #asyncio.create_task(btn1_async(0.3)
+    asyncio.create_task(play_async(bpm_float,kick,snare,hihat,0,1,2,sequence1,sequence2,sequence3,q))
+
+    # asyncio.create_task(update_pot_value_async(0.4))
+    # asyncio.create_task(btn1_async(0.3)
 
     while True:
-        pot1_value = mapp(pot1.value, 65535, 0, 0, 65535)
-        print(pot1.value)
+        pot1_value = mapp(pot1.value, 65535, 0, 0.05, 1)
+        print(truncate_float(pot1_value, 1))
+        await q.put(truncate_float(pot1_value, 1))
         pixels.show()
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.3)
 
 
 asyncio.run(main())
