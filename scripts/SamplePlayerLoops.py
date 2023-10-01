@@ -2,6 +2,7 @@ import time, board, digitalio, audiomixer, analogio, neopixel, asyncio
 from audiocore import WaveFile
 from adafruit_ticks import ticks_ms, ticks_add, ticks_less, ticks_diff
 import queue
+import pattern
 
 
 try:
@@ -57,9 +58,10 @@ pixels[0] = (10, 100, 20)
 current_btn_value = 1
 prev_value = 1
 
-pot1 = analogio.AnalogIn(board.GP28_A2)  # to read it: pot1.value 0 to 65535
-pot1_value = 0
 pot1 = analogio.AnalogIn(board.GP29_A3)  # to read it: pot1.value 0 to 65535
+pot1_value = 0
+pot2 = analogio.AnalogIn(board.GP28_A2)  # to read it: pot1.value 0 to 65535
+pot2_value = 0
 
 btns = [btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8]
 leds = [led1, led2, led3, led4, led5, led6, led7, led8]
@@ -175,6 +177,7 @@ async def play_async(delay, sound1,sound2,sound3, mixer_voice1,mixer_voice2,mixe
             leds[7].value = False
         if a != 0:
             leds[a - 1].value = False
+        #use getter and setter
         if sequence1[a] == 1:
             mixer.voice[mixer_voice1].play(sound1)
             leds[a].value = True
@@ -188,6 +191,29 @@ async def play_async(delay, sound1,sound2,sound3, mixer_voice1,mixer_voice2,mixe
 
         await asyncio.sleep(delay)  # yeald
 
+async def play_async_obj(delay, sound1,sound2,sound3, mixer_voice1,mixer_voice2,mixer_voice3, sequence1,sequence2,sequence3, q):
+    a = 0
+    while play:
+        if not q.empty():
+            delay = await q.get()
+        if a > 7:
+            a = 0
+        if a == 0:
+            leds[7].value = False
+        if a != 0:
+            leds[a - 1].value = False
+        #use getter and setter
+        if sequence1.get(a) == 1:
+            mixer.voice[mixer_voice1].play(sound1)
+            leds[a].value = True
+        if sequence2.get(a) == 1:
+            mixer.voice[mixer_voice2].play(sound2)
+            leds[a].value = True
+        if sequence3.get(a) == 1:
+            mixer.voice[mixer_voice3].play(sound3)
+            leds[a].value = True
+        a += 1
+        await asyncio.sleep(delay)  # yeald
 def set_led_async(index, vvalue):
     leds[index].value = vvalue
 
@@ -226,21 +252,34 @@ async def btn1_async(delay):  # TODO: check if it works
 
 async def main():
     q = queue.Queue()
+    pat1 = pattern.Pattern()
+    pat1.set_array([1,0,0,0,1,1,0,0])
+
+    pat2 = pattern.Pattern()
+    pat2.set_array([0,0,1,0,0,0,1,0])
+
+    pat3 = pattern.Pattern()
+    pat3.set_array([1,1,0,1,1,1,0,1])
 #     asyncio.create_task(play_sound_and_light_async(bpm_float, kick, 0, sequence1, q))
 #     asyncio.create_task(play_sound_and_light_async(bpm_float, snare, 1, sequence2, q))
 #     asyncio.create_task(play_sound_and_light_async(bpm_float, hihat, 2, sequence3, q))
 
-    asyncio.create_task(play_async(bpm_float,kick,snare,hihat,0,1,2,sequence1,sequence2,sequence3,q))
+    #asyncio.create_task(play_async(bpm_float,kick,snare,hihat,0,1,2,sequence1,sequence2,sequence3,q))
+    asyncio.create_task(play_async_obj(bpm_float,kick,snare,hihat,0,1,2,pat1,pat2,pat3,q))
 
     # asyncio.create_task(update_pot_value_async(0.4))
     # asyncio.create_task(btn1_async(0.3)
 
     while True:
-        pot1_value = mapp(pot1.value, 65535, 0, 0.05, 1)
+        pot1_value = mapp(pot1.value, 66535, 0, 0.1, 1.5)
+        # if pot1_value > 1:
+#             pat3.set_array([1,1,1,1,1,1,1,1])
+#         else:
+#             pat3.set_array([0,0,0,0,0,0,0,0])
         print(truncate_float(pot1_value, 1))
         await q.put(truncate_float(pot1_value, 1))
         pixels.show()
-        await asyncio.sleep(0.3)
+        await asyncio.sleep(0.4)
 
 
 asyncio.run(main())
