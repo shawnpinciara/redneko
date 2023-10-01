@@ -3,6 +3,7 @@ from audiocore import WaveFile
 from adafruit_ticks import ticks_ms, ticks_add, ticks_less, ticks_diff
 import queue
 import pattern
+import obj
 
 
 try:
@@ -92,8 +93,7 @@ audio.play(mixer)
 sequence1 = [1,0,0,0,1,1,0,0]  # kick
 sequence2 = [0,0,1,0,0,0,1,0]  # snare
 sequence3 = [1,1,0,1,1,1,0,1]  # hihat
-mode = 0  # 0=play,1=sound,2=sequence,3=layer
-play = True
+#mode = 0  # 0=play,1=sound,2=sequence,3=layer
 btn1_debounce = True
 i = 0
 
@@ -148,9 +148,9 @@ async def play_sound_async(delay, mixer_voice, ssound):
         )  # ogni quanto la funzione viene eseguita, lo "sleep" fa fare yeald e rilascia la cpu
 
 
-async def play_sound_and_light_async(delay, sound, mixer_voice, sequence, q):
+async def play_sound_and_light_async(delay, sound, mixer_voice, sequence, q,play):
     a = 0
-    while play:
+    while play.get():
         if not q.empty():
             delay = await q.get()
         if a > 7:
@@ -188,12 +188,11 @@ async def play_async(delay, sound1,sound2,sound3, mixer_voice1,mixer_voice2,mixe
             mixer.voice[mixer_voice3].play(sound3)
             leds[a].value = True
         a += 1
-
         await asyncio.sleep(delay)  # yeald
 
-async def play_async_obj(delay, sound1,sound2,sound3, mixer_voice1,mixer_voice2,mixer_voice3, sequence1,sequence2,sequence3, q):
+async def play_async_obj(delay, sound1,sound2,sound3, mixer_voice1,mixer_voice2,mixer_voice3, sequence1,sequence2,sequence3, q,play):
     a = 0
-    while play:
+    while play.get()==1:
         if not q.empty():
             delay = await q.get()
         if a > 7:
@@ -214,44 +213,26 @@ async def play_async_obj(delay, sound1,sound2,sound3, mixer_voice1,mixer_voice2,
             leds[a].value = True
         a += 1
         await asyncio.sleep(delay)  # yeald
-def set_led_async(index, vvalue):
-    leds[index].value = vvalue
 
 
-async def update_pot_value_async(delay):
-    pot1_value = mapp(pot1.value, 65535, 0, 0, 65535)
-    if pot1_value < 13107:
-        mode = 0  # play
-        pixels[0] = (10, 100, 20)
-    elif pot1_value < 26214:
-        mode = 1  # sound
-        pixels[0] = (10, 200, 20)
-    elif pot1_value < 39321:
-        mode = 2  # pattern
-    elif pot1_value < 52428:
-        mode = 3
-        pixels[0] = (100, 30, 20)
-    else:
-        pixels[0] = (10, 100, 100)
-        mode = 4
-    # TODO: add MODE t
-    await asyncio.sleep(delay)
-
-
-async def btn1_async(delay):  # TODO: check if it works
+async def btn1_async(delay,btn1,mode,play):  # TODO: check if it works
     prev_value = current_btn_value
-    current_btn_value = btn1.value
+    current_btn_value = btn1.get()
     if current_btn_value == 0 and current_btn_value != prev_value:  # button is pressed
         current_btn_value = 1
-        if mode == 0:
-            play = not play
-        elif mode == 1:
-            sequence1[0] = not sequence1[0]
+        if mode.get() == 0:
+            await play.put(0)
+    print(current_btn_value)
     await asyncio.sleep(delay)
 
 
 async def main():
     q = queue.Queue()
+    btn1_queue = queue.Queue()
+    mode = queue.Queue()
+    play = obj.Obj()
+    play.set(1)
+
     pat1 = pattern.Pattern()
     pat1.set_array([1,0,0,0,1,1,0,0])
 
@@ -265,19 +246,32 @@ async def main():
 #     asyncio.create_task(play_sound_and_light_async(bpm_float, hihat, 2, sequence3, q))
 
     #asyncio.create_task(play_async(bpm_float,kick,snare,hihat,0,1,2,sequence1,sequence2,sequence3,q))
-    asyncio.create_task(play_async_obj(bpm_float,kick,snare,hihat,0,1,2,pat1,pat2,pat3,q))
-
+    asyncio.create_task(play_async_obj(bpm_float,kick,snare,hihat,0,1,2,pat1,pat2,pat3,q,play))
+    asyncio.create_task(btn1_async(0.4,btn1_queue,mode,play))
     # asyncio.create_task(update_pot_value_async(0.4))
     # asyncio.create_task(btn1_async(0.3)
 
     while True:
         pot1_value = mapp(pot1.value, 66535, 0, 0.1, 1.5)
-        # if pot1_value > 1:
-#             pat3.set_array([1,1,1,1,1,1,1,1])
-#         else:
-#             pat3.set_array([0,0,0,0,0,0,0,0])
-        print(truncate_float(pot1_value, 1))
+        pot2_value = mapp(pot2.value, 65535, 0, 0, 65535)
+        await btn1_queue.put(btn1.value)
+        #print(truncate_float(pot1_value, 1))
+#         print(pot2_value)
         await q.put(truncate_float(pot1_value, 1))
+        if pot2_value < 13107:
+            await mode.put(0)  # play
+            pixels[0] = (10, 100, 20)
+        elif pot2_value < 26214:
+            await mode.put(1)  # sound
+            pixels[0] = (10, 200, 0)
+        elif pot2_value < 39321:
+            await mode.put(2)  # pattern
+        elif pot2_value < 52428:
+            await mode.put(3)
+            pixels[0] = (100, 30, 20)
+        else:
+            pixels[0] = (10, 100, 100)
+            mode.put(4)
         pixels.show()
         await asyncio.sleep(0.4)
 
