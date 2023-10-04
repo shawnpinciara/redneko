@@ -139,39 +139,64 @@ async def play_async_obj(delay, sound1,sound2,sound3, mixer_voice1,mixer_voice2,
             a += 1
             await asyncio.sleep(delay)  # yeald
 
-async def btn1_async(delay,button,patterns,mode,play):
+async def btn1_async(delay,button,patterns,mode,play,pattern_to_modify):
     while True:
         await button.released()
         modus = mode.get()
         if modus == 0:
             play.set(True)
+            pixels[0] = (255, 0, 0)
+            pixels.show()
         elif modus == 1:
-            value = int(not patterns[0].get(0))
-            patterns[0].set(0,value)
+            pos = 0
+            ind = pattern_to_modify.get()
+            value = int(not patterns[ind].get(pos))
+            patterns[ind].set(pos,value)
+            pixels[0] = (255, 0, 0)
+            pixels.show()
+        elif modus == 2:
+            pattern_to_modify.set(0)
+            pixels[0] = (255, 0, 0)
+            pixels.show()
     await asyncio.sleep(delay)
 
-async def btn2_async(delay,button,patterns,mode,play):
+async def btn2_async(delay,button,patterns,mode,play,pattern_to_modify):
     while True:
         await button.released()
         modus = mode.get()
         if mode.get() == 0:
             play.set(False) #TODO: debug cuz it doesnt work
         elif modus == 1:
-            value = int(not patterns[0].get(1))
-            patterns[0].set(1,value)
-            print(value)
+            pos = 1
+            ind = pattern_to_modify.get()
+            value = int(not patterns[ind].get(pos))
+            patterns[ind].set(pos,value)
+            pixels[0] = (255, 0, 0)
+            pixels.show()
+        elif modus == 2:
+            pattern_to_modify.set(1)
+            pixels[0] = (255, 0, 0)
+            pixels.show()
+
     await asyncio.sleep(delay)
 
-async def btn3_async(delay,button,patterns,mode,q):
+async def btn3_async(delay,button,patterns,mode,q,pattern_to_modify):
     while True:
         await button.released()
         modus = mode.get()
         if mode.get() == 0:
             await q.put(2)
         elif modus == 1:
-            value = int(not patterns[0].get(1))
-            patterns[0].set(1,value)
-            print(value)
+            pos = 2
+            ind = pattern_to_modify.get()
+            value = int(not patterns[ind].get(pos))
+            patterns[ind].set(pos,value)
+            pixels[0] = (255, 0, 0)
+            pixels.show()
+        elif modus == 2:
+            pattern_to_modify.set(2)
+            pixels[0] = (255, 0, 0)
+            pixels.show()
     await asyncio.sleep(delay)
 
 async def main():
@@ -180,6 +205,8 @@ async def main():
     mode = obj.Obj()
     play = obj.Obj()
     play.set(True)
+    pattern_to_modify = obj.Obj()
+    pattern_to_modify.set(0)
     #btn_obj = btn.Btn()
 
     pat1 = pattern.Pattern()
@@ -197,9 +224,9 @@ async def main():
     patterns = [pat1,pat2,pat3]
 
     asyncio.create_task(play_async_obj(bpm_float,kick,snare,hihat,0,1,2,pat1,pat2,pat3,q,play))
-    asyncio.create_task(btn1_async(0.4,btns[0],patterns,mode,play))
-    asyncio.create_task(btn2_async(0.4,btns[1],patterns,mode,play))
-    asyncio.create_task(btn3_async(0.4,btns[2],patterns,mode,q))
+    asyncio.create_task(btn1_async(0.4,btns[0],patterns,mode,play,pattern_to_modify))
+    asyncio.create_task(btn2_async(0.4,btns[1],patterns,mode,play,pattern_to_modify))
+    asyncio.create_task(btn3_async(0.4,btns[2],patterns,mode,q,pattern_to_modify))
 
 
     while True:
@@ -208,17 +235,18 @@ async def main():
         await q.put(truncate_float(pot1_value, 1))
         if pot2_value < 13107:
             mode.set(0)  # play
-            pixels[0] = (10, 100, 20)
+            pixels[0] = (0, 0, 255) #blue
         elif pot2_value < 26214:
-            mode.set(1)  # sound
-            pixels[0] = (10, 200, 0)
+            mode.set(1)  # pattern
+            pixels[0] = (102, 255, 51) #green
         elif pot2_value < 39321:
-            mode.set(2)  # pattern
+            mode.set(2)  # sound
+            pixels[0] = (255, 255, 0) #yellow
         elif pot2_value < 52428:
             mode.set(3)
-            pixels[0] = (100, 30, 20)
+            pixels[0] = (255, 51, 204) #magenta
         else:
-            pixels[0] = (10, 100, 100)
+            pixels[0] = (204, 0, 0) #red
             mode.set(4)
         pixels.show()
         await asyncio.sleep(0.4)
