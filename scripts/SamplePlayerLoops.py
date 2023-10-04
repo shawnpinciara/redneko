@@ -22,16 +22,13 @@ bpm_float = 60 / bpm
 
 
 # I/O
-btn1 = digitalio.DigitalInOut(board.GP3)
-btn1.switch_to_input(pull=digitalio.Pull.UP)
+btn1 = async_button.SimpleButton(board.GP27, value_when_pressed=False)
 led1 = digitalio.DigitalInOut(board.GP26)
 led1.direction = digitalio.Direction.OUTPUT
-btn2 = digitalio.DigitalInOut(board.GP15)
-btn2.switch_to_input(pull=digitalio.Pull.UP)
+btn2 = async_button.SimpleButton(board.GP15, value_when_pressed=False)
 led2 = digitalio.DigitalInOut(board.GP14)
 led2.direction = digitalio.Direction.OUTPUT
-btn3 = digitalio.DigitalInOut(board.GP13)
-btn3.switch_to_input(pull=digitalio.Pull.UP)
+btn3 = async_button.SimpleButton(board.GP13, value_when_pressed=False)
 led3 = digitalio.DigitalInOut(board.GP12)
 led3.direction = digitalio.Direction.OUTPUT
 btn4 = digitalio.DigitalInOut(board.GP11)
@@ -119,38 +116,63 @@ def mapp(value, leftMin, leftMax, rightMin, rightMax):
 
 async def play_async_obj(delay, sound1,sound2,sound3, mixer_voice1,mixer_voice2,mixer_voice3, sequence1,sequence2,sequence3, q,play):
     a = 0
-    while play.get():
-        if not q.empty():
-            delay = await q.get()
-        if a > 7:
-            a = 0
-        if a == 0:
-            leds[7].value = False
-        if a != 0:
-            leds[a - 1].value = False
-        #use getter and setter
-        if sequence1.get(a) == 1:
-            mixer.voice[mixer_voice1].play(sound1)
-            leds[a].value = True
-        if sequence2.get(a) == 1:
-            mixer.voice[mixer_voice2].play(sound2)
-            leds[a].value = True
-        if sequence3.get(a) == 1:
-            mixer.voice[mixer_voice3].play(sound3)
-            leds[a].value = True
-        a += 1
-        await asyncio.sleep(delay)  # yeald
-
-
-async def btn_async_mode_0(delay,button,patterns,mode,play):  # TODO: check if it works
     while True:
-        await button.pressed()
-        if mode.get() == 0:
+        while play.get():
+            if not q.empty():
+                delay = await q.get()
+            if a > 7:
+                a = 0
+            if a == 0:
+                leds[7].value = False
+            if a != 0:
+                leds[a - 1].value = False
+            #use getter and setter
+            if sequence1.get(a) == 1:
+                mixer.voice[mixer_voice1].play(sound1)
+                leds[a].value = True
+            if sequence2.get(a) == 1:
+                mixer.voice[mixer_voice2].play(sound2)
+                leds[a].value = True
+            if sequence3.get(a) == 1:
+                mixer.voice[mixer_voice3].play(sound3)
+                leds[a].value = True
+            a += 1
+            await asyncio.sleep(delay)  # yeald
+
+async def btn1_async(delay,button,patterns,mode,play):
+    while True:
+        await button.released()
+        modus = mode.get()
+        if modus == 0:
             play.set(True)
-        else:
-            patterns[0].set(0,1)
+        elif modus == 1:
+            value = int(not patterns[0].get(0))
+            patterns[0].set(0,value)
     await asyncio.sleep(delay)
 
+async def btn2_async(delay,button,patterns,mode,play):
+    while True:
+        await button.released()
+        modus = mode.get()
+        if mode.get() == 0:
+            play.set(False) #TODO: debug cuz it doesnt work
+        elif modus == 1:
+            value = int(not patterns[0].get(1))
+            patterns[0].set(1,value)
+            print(value)
+    await asyncio.sleep(delay)
+
+async def btn3_async(delay,button,patterns,mode,q):
+    while True:
+        await button.released()
+        modus = mode.get()
+        if mode.get() == 0:
+            await q.put(2)
+        elif modus == 1:
+            value = int(not patterns[0].get(1))
+            patterns[0].set(1,value)
+            print(value)
+    await asyncio.sleep(delay)
 
 async def main():
     q = queue.Queue()
@@ -159,16 +181,15 @@ async def main():
     play = obj.Obj()
     play.set(True)
     #btn_obj = btn.Btn()
-    button = async_button.SimpleButton(board.GP27, value_when_pressed=False)
 
     pat1 = pattern.Pattern()
-    pat1.set_array([1,0,0,0,1,1,0,0])
+    pat1.set_array([1,0,0,0,1,1,0,0]) #kick
 
     pat2 = pattern.Pattern()
-    pat2.set_array([0,0,1,0,0,0,1,0])
+    pat2.set_array([0,0,1,0,0,0,1,0]) #snare
 
     pat3 = pattern.Pattern()
-    pat3.set_array([1,1,0,1,1,1,0,1])
+    pat3.set_array([1,1,0,1,1,1,0,1]) #hihat
 
     pat1.set(0,0)
     pat2.set(0,0)
@@ -176,13 +197,14 @@ async def main():
     patterns = [pat1,pat2,pat3]
 
     asyncio.create_task(play_async_obj(bpm_float,kick,snare,hihat,0,1,2,pat1,pat2,pat3,q,play))
-    asyncio.create_task(btn_async_mode_0(0.4,button,patterns,mode,play))
+    asyncio.create_task(btn1_async(0.4,btns[0],patterns,mode,play))
+    asyncio.create_task(btn2_async(0.4,btns[1],patterns,mode,play))
+    asyncio.create_task(btn3_async(0.4,btns[2],patterns,mode,q))
 
 
     while True:
         pot1_value = mapp(pot1.value, 66535, 0, 0.1, 1.5)
         pot2_value = mapp(pot2.value, 65535, 0, 0, 65535)
-        await btn1_queue.put(btn1.value)
         await q.put(truncate_float(pot1_value, 1))
         if pot2_value < 13107:
             mode.set(0)  # play
