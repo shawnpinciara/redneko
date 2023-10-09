@@ -31,24 +31,19 @@ led2.direction = digitalio.Direction.OUTPUT
 btn3 = async_button.SimpleButton(board.GP13, value_when_pressed=False)
 led3 = digitalio.DigitalInOut(board.GP12)
 led3.direction = digitalio.Direction.OUTPUT
-btn4 = digitalio.DigitalInOut(board.GP11)
-btn4.switch_to_input(pull=digitalio.Pull.UP)
+btn4 = async_button.SimpleButton(board.GP11, value_when_pressed=False)
 led4 = digitalio.DigitalInOut(board.GP10)
 led4.direction = digitalio.Direction.OUTPUT
-btn5 = digitalio.DigitalInOut(board.GP9)
-btn5.switch_to_input(pull=digitalio.Pull.UP)
+btn5 = async_button.SimpleButton(board.GP9, value_when_pressed=False)
 led5 = digitalio.DigitalInOut(board.GP8)
 led5.direction = digitalio.Direction.OUTPUT
-btn6 = digitalio.DigitalInOut(board.GP7)
-btn6.switch_to_input(pull=digitalio.Pull.UP)
+btn6 = async_button.SimpleButton(board.GP7, value_when_pressed=False)
 led6 = digitalio.DigitalInOut(board.GP6)
 led6.direction = digitalio.Direction.OUTPUT
-btn7 = digitalio.DigitalInOut(board.GP5)
-btn7.switch_to_input(pull=digitalio.Pull.UP)
+btn7 = async_button.SimpleButton(board.GP5, value_when_pressed=False)
 led7 = digitalio.DigitalInOut(board.GP4)
 led7.direction = digitalio.Direction.OUTPUT
-# btn8 = digitalio.DigitalInOut(board.GP3)
-# btn8.switch_to_input(pull=digitalio.Pull.UP)
+btn8 = async_button.SimpleButton(board.GP3, value_when_pressed=False)
 led8 = digitalio.DigitalInOut(board.GP2)
 led8.direction = digitalio.Direction.OUTPUT
 
@@ -227,6 +222,11 @@ async def main():
     asyncio.create_task(btn1_async(0.4,btns[0],patterns,mode,play,pattern_to_modify))
     asyncio.create_task(btn2_async(0.4,btns[1],patterns,mode,play,pattern_to_modify))
     asyncio.create_task(btn3_async(0.4,btns[2],patterns,mode,q,pattern_to_modify))
+    asyncio.create_task(btn3_async(0.4,btns[3],patterns,mode,q,pattern_to_modify))
+    asyncio.create_task(btn3_async(0.4,btns[4],patterns,mode,q,pattern_to_modify))
+    asyncio.create_task(btn3_async(0.4,btns[5],patterns,mode,q,pattern_to_modify))
+    asyncio.create_task(btn3_async(0.4,btns[6],patterns,mode,q,pattern_to_modify))
+    #asyncio.create_task(btn3_async(0.4,btns[7],patterns,mode,q,pattern_to_modify))
 
 
     while True:
@@ -235,18 +235,18 @@ async def main():
         await q.put(truncate_float(pot1_value, 1))
         if pot2_value < 13107:
             mode.set(0)  # play
-            pixels[0] = (0, 0, 255) #blue
+            pixels[0] = (255, 0, 0) #green
         elif pot2_value < 26214:
             mode.set(1)  # pattern
-            pixels[0] = (102, 255, 51) #green
+            pixels[0] = (0, 255, 0) #red
         elif pot2_value < 39321:
             mode.set(2)  # sound
-            pixels[0] = (255, 255, 0) #yellow
+            pixels[0] = (0, 0, 255) #blue
         elif pot2_value < 52428:
             mode.set(3)
-            pixels[0] = (255, 51, 204) #magenta
+            pixels[0] = (255, 255, 0) #yellow
         else:
-            pixels[0] = (204, 0, 0) #red
+            pixels[0] = (255, 255, 255) #white
             mode.set(4)
         pixels.show()
         await asyncio.sleep(0.4)
