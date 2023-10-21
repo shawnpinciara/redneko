@@ -58,7 +58,7 @@ pot1_value = 0
 pot2 = analogio.AnalogIn(board.GP28_A2)  # to read it: pot1.value 0 to 65535
 pot2_value = 0
 
-btns = [btn1, btn2, btn3, btn4, btn5, btn6, btn7]
+btns = [btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8]
 leds = [led1, led2, led3, led4, led5, led6, led7, led8]
 
 
@@ -175,23 +175,23 @@ async def btn2_async(delay,button,patterns,mode,play,pattern_to_modify):
 
     await asyncio.sleep(delay)
 
-async def btn3_async(delay,button,patterns,mode,q,pattern_to_modify):
+async def btn3_async(delay,button,patterns,mode,q,pattern_to_modify,pos):
     while True:
         await button.released()
         modus = mode.get()
         if mode.get() == 0:
             await q.put(2)
-        elif modus == 1:
-            pos = 2
+        elif modus == 1: #modify single patter
             ind = pattern_to_modify.get()
             value = int(not patterns[ind].get(pos))
             patterns[ind].set(pos,value)
             pixels[0] = (255, 0, 0)
             pixels.show()
-        elif modus == 2:
+        elif modus == 2: #select sound
             pattern_to_modify.set(2)
             pixels[0] = (255, 0, 0)
             pixels.show()
+        elif modus == 3: #modify more patterns
     await asyncio.sleep(delay)
 
 async def main():
@@ -206,27 +206,32 @@ async def main():
 
     pat1 = pattern.Pattern()
     pat1.set_array([1,0,0,0,1,1,0,0]) #kick
+    pat1.set_array([0,0,0,0,0,0,0,0]) #kick
 
     pat2 = pattern.Pattern()
     pat2.set_array([0,0,1,0,0,0,1,0]) #snare
+    pat2.set_array([0,0,0,0,0,0,0,0])
 
     pat3 = pattern.Pattern()
     pat3.set_array([1,1,0,1,1,1,0,1]) #hihat
+    pat3.set_array([0,0,0,0,0,0,0,0])
 
     pat1.set(0,0)
     pat2.set(0,0)
     pat3.set(0,0)
     patterns = [pat1,pat2,pat3]
 
-    asyncio.create_task(play_async_obj(bpm_float,kick,snare,hihat,0,1,2,pat1,pat2,pat3,q,play))
+    asyncio.create_task(play_async_obj(bpm_float,kick,snare,hihat,0,1,2,pat1,pat2,pat3,q,play)) #PLAY
+
+    #HANDLE BUTTONS
     asyncio.create_task(btn1_async(0.4,btns[0],patterns,mode,play,pattern_to_modify))
     asyncio.create_task(btn2_async(0.4,btns[1],patterns,mode,play,pattern_to_modify))
-    asyncio.create_task(btn3_async(0.4,btns[2],patterns,mode,q,pattern_to_modify))
-    asyncio.create_task(btn3_async(0.4,btns[3],patterns,mode,q,pattern_to_modify))
-    asyncio.create_task(btn3_async(0.4,btns[4],patterns,mode,q,pattern_to_modify))
-    asyncio.create_task(btn3_async(0.4,btns[5],patterns,mode,q,pattern_to_modify))
-    asyncio.create_task(btn3_async(0.4,btns[6],patterns,mode,q,pattern_to_modify))
-    #asyncio.create_task(btn3_async(0.4,btns[7],patterns,mode,q,pattern_to_modify))
+    asyncio.create_task(btn3_async(0.4,btns[2],patterns,mode,q,pattern_to_modify,2))
+    asyncio.create_task(btn3_async(0.4,btns[3],patterns,mode,q,pattern_to_modify,3))
+    asyncio.create_task(btn3_async(0.4,btns[4],patterns,mode,q,pattern_to_modify,4))
+    asyncio.create_task(btn3_async(0.4,btns[5],patterns,mode,q,pattern_to_modify,5))
+    asyncio.create_task(btn3_async(0.4,btns[6],patterns,mode,q,pattern_to_modify,6))
+    asyncio.create_task(btn3_async(0.4,btns[7],patterns,mode,q,pattern_to_modify,7))
 
 
     while True:
@@ -237,10 +242,10 @@ async def main():
             mode.set(0)  # play
             pixels[0] = (255, 0, 0) #green
         elif pot2_value < 26214:
-            mode.set(1)  # pattern
+            mode.set(2)  # pattern
             pixels[0] = (0, 255, 0) #red
         elif pot2_value < 39321:
-            mode.set(2)  # sound
+            mode.set(1)  # sound
             pixels[0] = (0, 0, 255) #blue
         elif pot2_value < 52428:
             mode.set(3)
