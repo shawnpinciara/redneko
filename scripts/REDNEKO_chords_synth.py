@@ -8,6 +8,8 @@ import btn
 import async_button
 import synthio
 import audiopwmio
+import adafruit_wave
+import ulab.numpy as np
 
 
 bpm = 400
@@ -62,6 +64,11 @@ dom7_arr = [0,4,7,10]
 s_note = 60
 
 # SOUNDS:
+wavetable_fname = "wav/PROPHET.WAV"  # from http://waveeditonline.com/index-17.html
+wavetable_sample_size = 256  # number of samples per wave in wavetable (256 is standard)
+sample_rate = 25000
+wave_lfo_min = 0  # which wavetable number to start from
+wave_lfo_max = 10  # which wavetable number to go up to
 
 # MIXER (OUTS)
 audio = audiopwmio.PWMAudioOut(board.GP0)
@@ -75,9 +82,42 @@ mixer = audiomixer.Mixer(
 synth = synthio.Synthesizer(channel_count=1, sample_rate=22050)
 audio.play(mixer)
 mixer.voice[0].play(synth)
-mixer.voice[0].level = 0.4
+mixer.voice[0].level = 1
 
 btn1_debounce = True
+
+def lerp(a, b, t):  return (1-t)*a + t*b
+
+class Wavetable:
+    """ A 'waveform' for synthio.Note that uses a wavetable w/ a scannable wave position."""
+    def __init__(self, filepath, wave_len=256):
+        self.w = adafruit_wave.open(filepath)
+        self.wave_len = wave_len  # how many samples in each wave
+        if self.w.getsampwidth() != 2 or self.w.getnchannels() != 1:
+            raise ValueError("unsupported WAV format")
+        self.waveform = np.zeros(wave_len, dtype=np.int16)  # empty buffer we'll copy into
+        self.num_waves = self.w.getnframes() // self.wave_len
+        self.set_wave_pos(0)
+
+    def set_wave_pos(self, pos):
+        """Pick where in wavetable to be, morphing between waves"""
+        pos = min(max(pos, 0), self.num_waves-1)  # constrain
+        samp_pos = int(pos) * self.wave_len  # get sample position
+        self.w.setpos(samp_pos)
+        waveA = np.frombuffer(self.w.readframes(self.wave_len), dtype=np.int16)
+        self.w.setpos(samp_pos + self.wave_len)  # one wave up
+        waveB = np.frombuffer(self.w.readframes(self.wave_len), dtype=np.int16)
+        pos_frac = pos - int(pos)  # fractional position between wave A & B
+        self.waveform[:] = lerp(waveA, waveB, pos_frac) # mix waveforms A & B
+
+
+wavetable1 = Wavetable(wavetable_fname, wave_len=wavetable_sample_size)
+wavetable1.set_wave_pos(6)
+amp_env = synthio.Envelope(sustain_level=0.8, attack_time=0.05, release_time=0.3)
+wave_lfo = synthio.LFO(rate=0.1, waveform=np.array((0,32767), dtype=np.int16) )
+lpf = synth.low_pass_filter(4000, 1)  # cut some of the annoying harmonics
+
+synth.blocks.append(wave_lfo)  # attach wavelfo to global lfo runner since cannot attach to note
 
 
 def truncate_float(float_number, decimal_places):
@@ -93,88 +133,51 @@ def mapp(value, leftMin, leftMax, rightMin, rightMax):
     # Convert the 0-1 range into a value in the right range.
     return rightMin + (valueScaled * rightSpan)
 
-async def btn1_async(delay,button,s_note):
+async def play_chord_async(delay,button,led,s_note,chord_arr):
     while True:
         await button.pressed()
-        for i in range(0,3):
-            synth.press((s_note+maj7_arr[i]))
+        for i in range(0,4):
+            f = synthio.midi_to_hz(s_note+chord_arr[i]) # + random.uniform(-0.1,0.1) )
+            vibrato_lfo = synthio.LFO(rate=1, scale=0.01)
+            note = synthio.Note( frequency=f, waveform=wavetable1.waveform,envelope=amp_env, filter=lpf, bend=vibrato_lfo )
+            synth.press(note)
+        led.value = True
         await button.released()
         for i in range(0,3):
-            synth.release((s_note+maj7_arr[i]))
+            synth.release_all()
+        led.value = False
     await asyncio.sleep(delay)
 
-async def play_maj_async(delay,button,s_note):
-    while True:
-        await button.pressed()
-        pixels[0] = (255, 255, 0)
-        for i in range(0,3):
-            synth.press((s_note+maj7_arr[i]))
-        pixels.show()
-        await button.released()
-        for i in range(0,3):
-            synth.release((s_note+maj7_arr[i]))
-    await asyncio.sleep(delay)
-
-async def play_minor_async(delay,button,s_note):
-    while True:
-        await button.pressed()
-        pixels[0] = (0, 255, 0)
-        for i in range(0,3):
-            synth.press((s_note+minor7_arr[i]))
-        pixels.show()
-        await button.released()
-        for i in range(0,3):
-            synth.release((s_note+minor7_arr[i]))
-    await asyncio.sleep(delay)
-
-async def play_dom_async(delay,button,s_note):
-    while True:
-        await button.pressed()
-        pixels[0] = (255, 0, 0) #green
-        for i in range(0,3):
-            synth.press((s_note+dom7_arr[i]))
-        pixels.show()
-        await button.released()
-        for i in range(0,3):
-            synth.release((s_note+dom7_arr[i]))
-    await asyncio.sleep(delay)
 async def main():
     #asyncio.create_task(play_async_obj(bpm_float,kick,snare,hihat,0,1,2,pat1,pat2,pat3,q,play)) #PLAY
 
     #HANDLE BUTTONS
-    asyncio.create_task(play_maj_async(0.3,btns[0],60))
-    asyncio.create_task(play_minor_async(0.3,btns[1],62))
-    asyncio.create_task(play_minor_async(0.3,btns[2],64))
-#     asyncio.create_task(btn1_async(0.3,btns[3],65))
-    asyncio.create_task(play_dom_async(0.3,btns[4],67))
-    asyncio.create_task(play_maj_async(0.3,btns[5],69))
-    asyncio.create_task(play_maj_async(0.3,btns[6],71))
+    asyncio.create_task(play_chord_async(0.3,btns[0],leds[0],60,maj7_arr))
+    asyncio.create_task(play_chord_async(0.3,btns[1],leds[1],62,minor7_arr))
+    asyncio.create_task(play_chord_async(0.3,btns[2],leds[2],64,minor7_arr))
+#     asyncio.create_task(play_chord_async(0.3,btns[3],leds[3],65,,maj7_arr))
+    asyncio.create_task(play_chord_async(0.3,btns[4],leds[4],67,dom7_arr))
+    asyncio.create_task(play_chord_async(0.3,btns[5],leds[5],69,minor7_arr))
+    asyncio.create_task(play_chord_async(0.3,btns[6],leds[6],71,minor7_arr))
 
 
 
     # delay = 2
     while True:
 #         mixer.voice[0].level = (mixer.voice[0].level - 0.1) % 0.4
-        # pot1_value = mapp(pot1.value, 66535, 0, 0.1, 1.5)
-#         pot2_value = mapp(pot2.value, 65535, 0, 0, 65535)
-#         await q.put(truncate_float(pot1_value, 1))
-#         if pot2_value < 13107:
-#             mode.set(0)  # play
-#             pixels[0] = (255, 0, 0) #green
-#         elif pot2_value < 26214:
-#             mode.set(2)  # pattern
-#             pixels[0] = (0, 255, 0) #red
-#         elif pot2_value < 39321:
-#             mode.set(1)  # sound
-#             pixels[0] = (0, 0, 255) #blue
-#         elif pot2_value < 52428:
-#             mode.set(3)
-#             pixels[0] = (255, 255, 0) #yellow
-#         else:
-#             pixels[0] = (255, 255, 255) #white
-#             mode.set(4)
-#         pixels.show()
-        await asyncio.sleep(0.4)
+        pot1_value = mapp(pot1.value, 66535, 0, 0.1, 1.5)
+        pot2_value = mapp(pot2.value, 65535, 0, 0, 65535)
+        if pot2_value < 13107:
+            wavetable1.set_wave_pos(0)
+        elif pot2_value < 26214:
+            wavetable1.set_wave_pos(1)
+        elif pot2_value < 39321:
+            wavetable1.set_wave_pos(2)
+        elif pot2_value < 52428:
+            wavetable1.set_wave_pos(3)
+        else:
+            wavetable1.set_wave_pos(4)
+        await asyncio.sleep(0.2)
 
 
 asyncio.run(main())
