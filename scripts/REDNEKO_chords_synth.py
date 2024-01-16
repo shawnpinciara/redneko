@@ -21,24 +21,31 @@ bpm_float = 60 / bpm
 btn1 = async_button.SimpleButton(board.GP27, value_when_pressed=False)
 led1 = digitalio.DigitalInOut(board.GP26)
 led1.direction = digitalio.Direction.OUTPUT
+
 btn2 = async_button.SimpleButton(board.GP15, value_when_pressed=False)
 led2 = digitalio.DigitalInOut(board.GP14)
 led2.direction = digitalio.Direction.OUTPUT
+
 btn3 = async_button.SimpleButton(board.GP13, value_when_pressed=False)
 led3 = digitalio.DigitalInOut(board.GP12)
 led3.direction = digitalio.Direction.OUTPUT
+
 btn4 = async_button.SimpleButton(board.GP11, value_when_pressed=False)
 led4 = digitalio.DigitalInOut(board.GP10)
 led4.direction = digitalio.Direction.OUTPUT
+
 btn5 = async_button.SimpleButton(board.GP9, value_when_pressed=False)
 led5 = digitalio.DigitalInOut(board.GP8)
 led5.direction = digitalio.Direction.OUTPUT
+
 btn6 = async_button.SimpleButton(board.GP7, value_when_pressed=False)
 led6 = digitalio.DigitalInOut(board.GP6)
 led6.direction = digitalio.Direction.OUTPUT
+
 btn7 = async_button.SimpleButton(board.GP5, value_when_pressed=False)
 led7 = digitalio.DigitalInOut(board.GP4)
 led7.direction = digitalio.Direction.OUTPUT
+
 btn8 = async_button.SimpleButton(board.GP3, value_when_pressed=False)
 led8 = digitalio.DigitalInOut(board.GP2)
 led8.direction = digitalio.Direction.OUTPUT
@@ -64,7 +71,7 @@ dom7_arr = [0,4,7,10]
 s_note = 60
 
 # SOUNDS:
-wavetable_fname = "wav/PROPHET.WAV"  # from http://waveeditonline.com/index-17.html
+wavetable_fname = "wav/GRAV.WAV"  # from
 wavetable_sample_size = 256  # number of samples per wave in wavetable (256 is standard)
 sample_rate = 25000
 wave_lfo_min = 0  # which wavetable number to start from
@@ -136,6 +143,7 @@ def mapp(value, leftMin, leftMax, rightMin, rightMax):
 async def play_chord_async(delay,button,led,s_note,chord_arr):
     while True:
         await button.pressed()
+        synth.release_all()
         for i in range(0,4):
             f = synthio.midi_to_hz(s_note+chord_arr[i]) # + random.uniform(-0.1,0.1) )
             vibrato_lfo = synthio.LFO(rate=1, scale=0.01)
@@ -144,8 +152,17 @@ async def play_chord_async(delay,button,led,s_note,chord_arr):
         led.value = True
         await button.released()
         for i in range(0,3):
-            synth.release_all()
+            f = synthio.midi_to_hz(s_note+chord_arr[i]) # + random.uniform(-0.1,0.1) )
+            vibrato_lfo = synthio.LFO(rate=1, scale=0.01)
+            note = synthio.Note( frequency=f, waveform=wavetable1.waveform,envelope=amp_env, filter=lpf, bend=vibrato_lfo )
+            synth.release(note)
         led.value = False
+    await asyncio.sleep(delay)
+
+async def stop_play_async(delay,button):
+    while True:
+        await button.pressed()
+        synth.release_all()
     await asyncio.sleep(delay)
 
 async def main():
@@ -155,10 +172,11 @@ async def main():
     asyncio.create_task(play_chord_async(0.3,btns[0],leds[0],60,maj7_arr))
     asyncio.create_task(play_chord_async(0.3,btns[1],leds[1],62,minor7_arr))
     asyncio.create_task(play_chord_async(0.3,btns[2],leds[2],64,minor7_arr))
-#     asyncio.create_task(play_chord_async(0.3,btns[3],leds[3],65,,maj7_arr))
+    asyncio.create_task(play_chord_async(0.3,btns[3],leds[3],65,maj7_arr))
     asyncio.create_task(play_chord_async(0.3,btns[4],leds[4],67,dom7_arr))
     asyncio.create_task(play_chord_async(0.3,btns[5],leds[5],69,minor7_arr))
     asyncio.create_task(play_chord_async(0.3,btns[6],leds[6],71,minor7_arr))
+    asyncio.create_task(stop_play_async(0.3,btns[7]))
 
 
 
