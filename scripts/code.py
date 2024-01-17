@@ -177,23 +177,36 @@ async def stop_play_async(delay,button):
     await asyncio.sleep(delay)
 
 async def main():
+    #asyncio.create_task(play_async_obj(bpm_float,kick,snare,hihat,0,1,2,pat1,pat2,pat3,q,play)) #PLAY
 
     #HANDLE BUTTONS
     asyncio.create_task(play_chord_async(0.3,btns[0],leds[0],60,maj7_arr))
     asyncio.create_task(play_chord_async(0.3,btns[1],leds[1],62,minor2_arr))
     asyncio.create_task(play_chord_async(0.3,btns[2],leds[2],64,minor3_arr))
-    #asyncio.create_task(play_chord_async(0.3,btns[3],leds[3],65,maj4_arr))   ERROR ARISE HERE
+    #asyncio.create_task(play_chord_async(0.3,btns[3],leds[3],65,maj4_arr))
     asyncio.create_task(play_chord_async(0.3,btns[4],leds[4],67,dom5_arr))
     asyncio.create_task(play_chord_async(0.3,btns[5],leds[5],69,minor6_arr))
     asyncio.create_task(play_chord_async(0.3,btns[6],leds[6],71,dim7_arr))
     asyncio.create_task(stop_play_async(0.3,btns[7]))
 
 
+
+    # delay = 2
     while True:
 #         mixer.voice[0].level = (mixer.voice[0].level - 0.1) % 0.4
         pot1_value = mapp(pot1.value, 66535, 0, 0.1, 1.5)
         pot2_value = mapp(pot2.value, 65535, 0, 0, 10)
         wavetable1.set_wave_pos(int(pot2_value)*2)
+        # if pot2_value < 13107:
+#             wavetable1.set_wave_pos(0)
+#         elif pot2_value < 26214:
+#             wavetable1.set_wave_pos(1)
+#         elif pot2_value < 39321:
+#             wavetable1.set_wave_pos(2)
+#         elif pot2_value < 52428:
+#             wavetable1.set_wave_pos(3)
+#         else:
+#             wavetable1.set_wave_pos(4)
         await asyncio.sleep(0.2)
 
 
