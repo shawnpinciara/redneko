@@ -19,35 +19,35 @@ bpm_float = 60 / bpm
 
 
 # I/O
-btn1 = async_button.SimpleButton(board.GP27, value_when_pressed=False)
+btn1 = async_button.Button(board.GP27, value_when_pressed=False)
 led1 = digitalio.DigitalInOut(board.GP26)
 led1.direction = digitalio.Direction.OUTPUT
 
-btn2 = async_button.SimpleButton(board.GP15, value_when_pressed=False)
+btn2 = async_button.Button(board.GP15, value_when_pressed=False)
 led2 = digitalio.DigitalInOut(board.GP14)
 led2.direction = digitalio.Direction.OUTPUT
 
-btn3 = async_button.SimpleButton(board.GP13, value_when_pressed=False)
+btn3 = async_button.Button(board.GP13, value_when_pressed=False)
 led3 = digitalio.DigitalInOut(board.GP12)
 led3.direction = digitalio.Direction.OUTPUT
 
-btn4 = async_button.SimpleButton(board.GP11, value_when_pressed=False)
+btn4 = async_button.Button(board.GP11, value_when_pressed=False)
 led4 = digitalio.DigitalInOut(board.GP10)
 led4.direction = digitalio.Direction.OUTPUT
 
-btn5 = async_button.SimpleButton(board.GP9, value_when_pressed=False)
+btn5 = async_button.Button(board.GP9, value_when_pressed=False)
 led5 = digitalio.DigitalInOut(board.GP8)
 led5.direction = digitalio.Direction.OUTPUT
 
-btn6 = async_button.SimpleButton(board.GP7, value_when_pressed=False)
+btn6 = async_button.Button(board.GP7, value_when_pressed=False)
 led6 = digitalio.DigitalInOut(board.GP6)
 led6.direction = digitalio.Direction.OUTPUT
 
-btn7 = async_button.SimpleButton(board.GP5, value_when_pressed=False)
+btn7 = async_button.Button(board.GP5, value_when_pressed=False)
 led7 = digitalio.DigitalInOut(board.GP4)
 led7.direction = digitalio.Direction.OUTPUT
 
-btn8 = async_button.SimpleButton(board.GP3, value_when_pressed=False)
+btn8 = async_button.Button(board.GP3, value_when_pressed=False)
 led8 = digitalio.DigitalInOut(board.GP2)
 led8.direction = digitalio.Direction.OUTPUT
 
@@ -64,24 +64,32 @@ pot2_value = 0
 
 btns = [btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8]
 leds = [led1, led2, led3, led4, led5, led6, led7, led8]
-midi_values = [0,1,2,3,4,5,6,7,8,9,10,11]
 octave = 4
+s = 64
+midi_values = [0,1,2,3,4,5,6,7,8,9,10,11]
+midi_scale_array = [s,s+2,s+4,s+5,s+7,s+9,s+11]
 maj7_arr = [0,4,7,11]
 min7_arr = [0,3,7,10]
 dom7_arr = [0,4,7,10]
+dim7_arr = [0,3,6,9]
 
-maj1_arr = [0,4,7,11]
+major1_arr = [0,4,7,11]
 minor2_arr = [-2,0,3,7]
 minor3_arr = [-2,0,3,7]
-maj4_arr = [-5,-1,0,4]
-dom5_arr = [-5,-2,0,4]
+major4_arr = [-5,-1,0,4]
+dominant5_arr = [-5,-2,0,4]
 minor6_arr = [-9,-5,-2,0]
-dim7_arr = [-9,-6,-2,0]
+diminished7_arr = [-9,-6,-2,0]
+
+chords_array = [maj7_arr,min7_arr,min7_arr,maj7_arr,dom7_arr,min7_arr,dim7_arr]
+chords_array_inverseions = [major1_arr,minor2_arr,minor2_arr,major4_arr,dominant5_arr,minor6_arr,diminished7_arr]
 
 s_note = 60
 
 # SOUNDS:
-wavetable_fname = "wav/REALIZE.WAV"  # from https://waveeditonline.com/
+# from https://waveeditonline.com/
+#https://kimurataro.bandcamp.com/album/free-wavetables
+wavetable_fname = "wav/1.WAV"
 wavetable_sample_size = 256  # number of samples per wave in wavetable (256 is standard)
 sample_rate = 25000
 wave_lfo_min = 0  # which wavetable number to start from
@@ -99,7 +107,7 @@ mixer = audiomixer.Mixer(
 synth = synthio.Synthesizer(channel_count=1, sample_rate=22050)
 audio.play(mixer)
 mixer.voice[0].play(synth)
-mixer.voice[0].level = 1
+mixer.voice[0].level = 0.5
 
 btn1_debounce = True
 
@@ -129,8 +137,8 @@ class Wavetable:
 
 
 wavetable1 = Wavetable(wavetable_fname, wave_len=wavetable_sample_size)
-wavetable1.set_wave_pos(6)
-amp_env = synthio.Envelope(sustain_level=0.8, attack_time=0.05, release_time=0.3)
+wavetable1.set_wave_pos(0)
+amp_env = synthio.Envelope(sustain_level=0.8, attack_time=0.05, release_time=0.5)
 wave_lfo = synthio.LFO(rate=0.1, waveform=np.array((0,32767), dtype=np.int16) )
 lpf = synth.low_pass_filter(4000, 1)  # cut some of the annoying harmonics
 
@@ -152,48 +160,52 @@ def mapp(value, leftMin, leftMax, rightMin, rightMax):
 
 async def play_chord_async(delay,button,led,s_note,chord_arr):
     while True:
-        await button.pressed()
+        await button.wait(1) #https://circuitpython-async-button.readthedocs.io/en/latest/api.html#async_button.MultiButton
         synth.release_all()
-        #bass root
 
+        #bass root
         f = synthio.midi_to_hz(s_note-36) # + random.uniform(-0.1,0.1) )
+        lpf = synth.low_pass_filter(4000, 1)  # cut some of the annoying harmonics
         vibrato_lfo = synthio.LFO(rate=1, scale=0.01)
         note = synthio.Note( frequency=f, waveform=wavetable1.waveform,envelope=amp_env, filter=lpf, bend=vibrato_lfo )
         synth.press(note)
+
         #7t chord
+        f = synthio.midi_to_hz(s_note) # + random.uniform(-0.1,0.1) )
+        lpf = synth.low_pass_filter(f+100, 1)  # cut some of the annoying harmonics
         for i in range(0,4):
-            f = synthio.midi_to_hz(s_note+chord_arr[i]-(random.randint(0,1)*12)) # + random.uniform(-0.1,0.1) )
+            f = synthio.midi_to_hz(s_note+chord_arr[i]-(random.randint(0,1)*12)) + random.uniform(-0.1,0.1)
             note = synthio.Note( frequency=f, waveform=wavetable1.waveform,envelope=amp_env, filter=lpf, bend=vibrato_lfo )
             synth.press(note)
+        pixels[0] = (random.randint(0,120), 100, 20)
+        pixels.show()
         led.value = True
-        await button.released()
+        await button.wait(2)
         led.value = False
     await asyncio.sleep(delay)
 
 async def stop_play_async(delay,button):
     while True:
-        await button.pressed()
+        await button.wait(1)
         synth.release_all()
     await asyncio.sleep(delay)
 
 async def main():
 
+
+
     #HANDLE BUTTONS
-    asyncio.create_task(play_chord_async(0.3,btns[0],leds[0],60,maj7_arr))
-    asyncio.create_task(play_chord_async(0.3,btns[1],leds[1],62,minor2_arr))
-    asyncio.create_task(play_chord_async(0.3,btns[2],leds[2],64,minor3_arr))
-    #asyncio.create_task(play_chord_async(0.3,btns[3],leds[3],65,maj4_arr))   ERROR ARISE HERE
-    asyncio.create_task(play_chord_async(0.3,btns[4],leds[4],67,dom5_arr))
-    asyncio.create_task(play_chord_async(0.3,btns[5],leds[5],69,minor6_arr))
-    asyncio.create_task(play_chord_async(0.3,btns[6],leds[6],71,dim7_arr))
+    for i in range(0,7):
+         asyncio.create_task(play_chord_async(0.3,btns[i],leds[i],midi_scale_array[i],chords_array[i]))
     asyncio.create_task(stop_play_async(0.3,btns[7]))
 
 
     while True:
 #         mixer.voice[0].level = (mixer.voice[0].level - 0.1) % 0.4
-        pot1_value = mapp(pot1.value, 66535, 0, 0.1, 1.5)
+        pot1_value = mapp(pot1.value, 66535, 0, 0, 1)
         pot2_value = mapp(pot2.value, 65535, 0, 0, 10)
         wavetable1.set_wave_pos(int(pot2_value)*2)
+        mixer.voice[0].level = pot1_value
         await asyncio.sleep(0.2)
 
 
