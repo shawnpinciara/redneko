@@ -186,6 +186,7 @@ async def main():
     asyncio.create_task(play_chord_async(0.3,btns[4],leds[4],67,dom5_arr))
     asyncio.create_task(play_chord_async(0.3,btns[5],leds[5],69,minor6_arr))
     asyncio.create_task(play_chord_async(0.3,btns[6],leds[6],71,dim7_arr))
+
     asyncio.create_task(stop_play_async(0.3,btns[7]))
 
 

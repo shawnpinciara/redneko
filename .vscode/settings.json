@@ -1,0 +1,17 @@
+{
+    "python.languageServer": "Pylance",
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingModuleSource": "none",
+        "reportShadowedImports": "none"
+    },
+    "python.linting.enabled": true,
+    "python.analysis.typeCheckingMode": "basic",
+    "micropico.syncFolder": "",
+    "micropico.openOnStart": true,
+    "python.analysis.typeshedPaths": [
+        "~\\.micropico-stubs\\included"
+    ],
+    "python.analysis.extraPaths": [
+        "~\\.micropico-stubs\\included"
+    ]
+}
