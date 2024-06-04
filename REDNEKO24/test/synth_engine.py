@@ -19,6 +19,7 @@ amp_env_slow = synthio.Envelope(
                                 sustain_level=1.0,
                                 release_time=0.8
 )
+
 synth = synthio.Synthesizer(channel_count=1, sample_rate=22050,envelope=amp_env_slow)
 synth.envelope = amp_env_slow
 

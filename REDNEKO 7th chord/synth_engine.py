@@ -31,6 +31,7 @@ mixer.voice[0].level = 1
 
 
 def lerp(a, b, t):  return (1-t)*a + t*b
+def map(s, a1, a2, b1, b2): return b1 + ((s - a1) * (b2 - b1) / (a2 - a1))
 
 class Wavetable:
     """ A 'waveform' for synthio.Note that uses a wavetable w/ a scannable wave position."""
