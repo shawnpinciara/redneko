@@ -11,7 +11,7 @@ import synthio
 
 # for PWM audio with an RC filter
 import audiopwmio
-audio = audiopwmio.PWMAudioOut(board.GP15)
+audio = audiopwmio.PWMAudioOut(board.GP0)
 
 mixer = audiomixer.Mixer(channel_count=1, sample_rate=22050, buffer_size=2048)
 amp_env_slow = synthio.Envelope(
