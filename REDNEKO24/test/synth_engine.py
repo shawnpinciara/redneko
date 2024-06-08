@@ -30,6 +30,6 @@ mixer.voice[0].level = 1
 while True:
     synth.press((65, 69, 72))  # midi note 65 = F4
     time.sleep(0.5)
-    synth.release((65, 69, 72))  # release the note we pressed
+    synth.release((65, 69+11, 72))  # release the note we pressed
     time.sleep(0.5)
     #mixer.voice[0].level = (mixer.voice[0].level - 0.1) % 0.4  # reduce volume each pass

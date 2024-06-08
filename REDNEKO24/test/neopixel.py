@@ -12,3 +12,4 @@ while True:
     pixels[0] = (255, 0, 0)
     pixels.show() # type: ignore
     time.sleep(1)
+
