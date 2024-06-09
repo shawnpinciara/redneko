@@ -9,3 +9,8 @@ async def btn1_async(delay):
 
 async def main():
     asyncio.create_task(btn1_async(0.4))
+    while True:
+        await asyncio.sleep(1)
+
+
+asyncio.run(main())
