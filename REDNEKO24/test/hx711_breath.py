@@ -5,8 +5,8 @@ import board
 import time
 from hx711.hx711_pio import HX711_PIO
 
-pin_data = board.GP4
-pin_clk = board.GP5
+pin_data = board.GP5
+pin_clk = board.GP4
 hx = HX711_PIO(pin_data, pin_clk, tare=True)
 
 while True:
@@ -17,4 +17,4 @@ while True:
             reading, reading_raw, hx.offset, hx.scalar
         )
     )
-    time.sleep(1)
+    time.sleep(0.2)
