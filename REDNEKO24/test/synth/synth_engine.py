@@ -5,13 +5,12 @@
 
 import time
 import board # type: ignore
-import digitalio # type: ignore
+
 import audiomixer # type: ignore
 import synthio # type: ignore
-
 # for PWM audio with an RC filter
 import audiopwmio # type: ignore
-audio = audiopwmio.PWMAudioOut(board.GP0)
+audio = audiopwmio.PWMAudioOut(board.GP1)
 
 mixer = audiomixer.Mixer(channel_count=1, sample_rate=22050, buffer_size=2048)
 amp_env_slow = synthio.Envelope(

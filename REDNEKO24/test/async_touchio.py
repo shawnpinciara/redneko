@@ -1,6 +1,6 @@
 import asyncio
 import board # type: ignore
-import touchio
+import touchio # type: ignore
 from adafruit_debouncer import Debouncer, Button # type: ignore
 
 #From here:
@@ -54,6 +54,8 @@ async def main():
     asyncio.create_task(handleBtnPressing(0.005,btn2,"btn2",1))
     asyncio.create_task(handleBtnPressing(0.005,btn3,"btn3",2))
     asyncio.create_task(handleBtnPressing(0.005,btn4,"btn4",3))
+
+    
     asyncio.create_task(getBTNSS(0.1))
     while True: #if not the program end
        await asyncio.sleep(1)

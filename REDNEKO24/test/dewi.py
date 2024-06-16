@@ -1,6 +1,6 @@
 import asyncio
 import board # type: ignore
-import touchio
+import touchio # type: ignore
 from adafruit_debouncer import Debouncer, Button # type: ignore
 import time
 import board # type: ignore
@@ -8,21 +8,12 @@ import digitalio # type: ignore
 import audiomixer# type: ignore
 import synthio # type: ignore
 # for PWM audio with an RC filter
-import audiopwmio# type: ignore
-audio = audiopwmio.PWMAudioOut(board.GP0)
+import audiopwmio # type: ignore
+import analogio # type: ignore
+from adafruit_simplemath import map_range #type: ignore
 
-#SYNTH
+
 mixer = audiomixer.Mixer(channel_count=1, sample_rate=22050, buffer_size=2048)
-amp_env_slow = synthio.Envelope(attack_time=0.01,sustain_level=1.0,release_time=0.1)
-synth = synthio.Synthesizer(channel_count=1, sample_rate=22050,envelope=amp_env_slow)
-synth.envelope = amp_env_slow
-audio.play(mixer)
-mixer.voice[0].play(synth)
-mixer.voice[0].level = 1
-#     #mixer.voice[0].level = (mixer.voice[0].level - 0.1) % 0.4  # reduce volume each pass
-
-#CAPACITIVE TOUCH
-
 #From here:
 #https://diyelectromusic.com/2023/06/12/raspberry-pi-pico-capacitive-touch/
 
@@ -154,12 +145,40 @@ async def handleBtnPressing(sleep_time,btn, n_string,i):
             buttons.setButton(i,0)
         await asyncio.sleep(sleep_time)
 
+async def handlePotChange(sleep_time):
+   pot = analogio.AnalogIn(board.A3)
+   global mixer
+   while True:
+      mixer.voice[0].level = map_range(pot,400,1024,0,2)
+      await asyncio.sleep(sleep_time)
+
+
+async def playSynth(sleep_time):
+    #SYNTH
+    global mixer
+    audio = audiopwmio.PWMAudioOut(board.GP1)
+    amp_env_slow = synthio.Envelope(attack_time=0.01,sustain_level=1.0,release_time=0.1)
+    synth = synthio.Synthesizer(channel_count=1, sample_rate=22050,envelope=amp_env_slow)
+    synth.envelope = amp_env_slow
+    audio.play(mixer)
+    mixer.voice[0].play(synth)
+    mixer.voice[0].level = 1
+    #     #mixer.voice[0].level = (mixer.voice[0].level - 0.1) % 0.4  # reduce volume each pass
+    noteArray: list[int] = [0,2,11,4,12,9,5,7,1,3,12,5,16,10,6,8]
+    global buttons
+    while True:
+       synth.release_all_then_press(noteArray[buttons.getButtonsState()]+(12*5))
+    #    synth.press(60)
+       await asyncio.sleep(sleep_time)
+
+
 async def main():
     asyncio.create_task(handleBtnPressing(0.005,btn1,"btn1",0))
     asyncio.create_task(handleBtnPressing(0.005,btn2,"btn2",1))
     asyncio.create_task(handleBtnPressing(0.005,btn3,"btn3",2))
     asyncio.create_task(handleBtnPressing(0.005,btn4,"btn4",3))
-    asyncio.create_task(updateBreath(0.05))
+    # asyncio.create_task(updateBreath(0.05))
+    asyncio.create_task(playSynth(0.01))
     while True: #if not the program end
        #print(buttons.getButtonsState())
        await asyncio.sleep(1)
