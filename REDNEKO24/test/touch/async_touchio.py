@@ -7,7 +7,7 @@ from adafruit_debouncer import Debouncer, Button # type: ignore
 #https://diyelectromusic.com/2023/06/12/raspberry-pi-pico-capacitive-touch/
 
 THRESHOLD = 1000
-t1 = touchio.TouchIn(board.GP21); t1.threshold = t1.raw_value + THRESHOLD; btn1 = Button(t1, value_when_pressed=True) # type: ignore
+# t1 = touchio.TouchIn(board.GP21); t1.threshold = t1.raw_value + THRESHOLD; btn1 = Button(t1, value_when_pressed=True) # type: ignore
 t2 = touchio.TouchIn(board.GP20); t2.threshold = t2.raw_value + THRESHOLD; btn2 = Button(t2, value_when_pressed=True)   # type: ignore
 t3 = touchio.TouchIn(board.GP19); t3.threshold = t3.raw_value + THRESHOLD; btn3 = Button(t3, value_when_pressed=True)   # type: ignore
 t4 = touchio.TouchIn(board.GP18); t4.threshold = t4.raw_value + THRESHOLD; btn4 = Button(t4, value_when_pressed=True)   # type: ignore
@@ -50,7 +50,7 @@ async def getBTNSS(sleep_time):
 
 
 async def main():
-    asyncio.create_task(handleBtnPressing(0.005,btn1,"btn1",0))
+    # asyncio.create_task(handleBtnPressing(0.005,btn1,"btn1",0))
     asyncio.create_task(handleBtnPressing(0.005,btn2,"btn2",1))
     asyncio.create_task(handleBtnPressing(0.005,btn3,"btn3",2))
     asyncio.create_task(handleBtnPressing(0.005,btn4,"btn4",3))

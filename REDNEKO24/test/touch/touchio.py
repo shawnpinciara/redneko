@@ -6,7 +6,7 @@ from adafruit_debouncer import Debouncer, Button # type: ignore
 #https://diyelectromusic.com/2023/06/12/raspberry-pi-pico-capacitive-touch/
 
 THRESHOLD = 1000
-t = touchio.TouchIn(board.GP21)
+t = touchio.TouchIn(board.GP18)
 t.threshold = t.raw_value + THRESHOLD
 touchpad = Button(t, value_when_pressed=True)
 
