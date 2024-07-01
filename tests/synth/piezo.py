@@ -1,6 +1,7 @@
-import board
-import pwmio
+import board # type: ignore
 import time
+
+import pwmio # type: ignore
 
 buzzer = pwmio.PWMOut(board.GP16, variable_frequency=True)
 

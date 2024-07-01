@@ -11,9 +11,9 @@ import busio # type: ignore
 #MIDI
 import adafruit_midi # type: ignore
 import usb_midi # type: ignore
-from adafruit_midi.control_change import ControlChange as midi # type: ignore
-from adafruit_midi.note_off import NoteOff as midi # type: ignore
-from adafruit_midi.note_on import NoteOn as midi # type: ignore
+from adafruit_midi.control_change import ControlChange # type: ignore
+from adafruit_midi.note_off import NoteOff# type: ignore
+from adafruit_midi.note_on import NoteOn# type: ignore
 
 #                       TX         RX
 uart = busio.UART(board.GP0, board.GP1, baudrate=31250, timeout=0.001)
@@ -38,6 +38,8 @@ buzzer = pwmio.PWMOut(board.GP2, variable_frequency=True)
 a = 12
 buzzer.duty_cycle = 2**a
 
+
+#SYNTH
 def noteOn(note):
     buzzer.frequency = int(midi_to_hz(note))
 
@@ -45,7 +47,10 @@ def noteOn(note):
 
 while True:
     msg = midi.receive()
-    if msg:
+    if isinstance(msg,NoteOn):
         #midi.send(msg)
         print(msg)
+        buzzer.duty_cycle = 2**a
         noteOn(msg.note)
+    elif isinstance(msg,NoteOff):
+        buzzer.duty_cycle = 2**1
