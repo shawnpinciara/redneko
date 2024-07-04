@@ -40,17 +40,29 @@ buzzer.duty_cycle = 2**a
 
 
 #SYNTH
-def noteOn(note):
-    buzzer.frequency = int(midi_to_hz(note))
-
+note_pres = 42
+note_prev = 57
+def noteOn(midi_note):
+    global note_prev
+    global note_pres
+    note_prev = int(midi_to_hz(note_pres))
+    note_pres = int(midi_to_hz(midi_note))
+    
+    print(str(note_prev) + " to " + str(note_pres))
+    for slide in range(note_prev,note_pres):
+        buzzer.frequency = slide
+        time.sleep(.008)
+        #buzzer.frequency = int(midi_to_hz(note))
+    
 
 
 while True:
     msg = midi.receive()
     if isinstance(msg,NoteOn):
         #midi.send(msg)
-        print(msg)
+        # print(msg)
         buzzer.duty_cycle = 2**a
         noteOn(msg.note)
     elif isinstance(msg,NoteOff):
-        buzzer.duty_cycle = 2**1
+        #buzzer.duty_cycle = 2**5
+        print("Off")

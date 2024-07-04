@@ -4,9 +4,13 @@
 
 import rotaryio # type: ignore
 import board # type: ignore
-import pins as p
 
-encoder = rotaryio.IncrementalEncoder(p.encoder_1, p.encoder_2)
+
+encoder_1 = board.GP3
+encoder_2 = board.GP4
+encoder_sw = board.GP5
+
+encoder = rotaryio.IncrementalEncoder(encoder_2, encoder_1)
 last_position = None
 while True:
     position = encoder.position

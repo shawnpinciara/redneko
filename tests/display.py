@@ -12,8 +12,8 @@ displayio.release_displays()
 board_type = os.uname().machine
 print(f"Board: {board_type}")
 
-sda = board.GP26
-scl = board.GP27
+sda = board.GP6
+scl = board.GP7
 print("Supported.")
   
 i2c = busio.I2C(scl, sda)

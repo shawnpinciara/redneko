@@ -5,6 +5,10 @@ import time
 pixels = neopixel.NeoPixel(board.NEOPIXEL, 1, auto_write=False) # type: ignore
 
 
+def light(color):
+    pixels[0] = color
+    pixels.show() # type: ignore
+
 while True:
     pixels[0] = (10, 100, 20)
     pixels.show() # type: ignore
