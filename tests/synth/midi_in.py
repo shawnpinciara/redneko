@@ -11,9 +11,9 @@ import board # type: ignore
 import busio # type: ignore
 import adafruit_midi # type: ignore
 import usb_midi # type: ignore
-from adafruit_midi.control_change import ControlChange as midi # type: ignore
-from adafruit_midi.note_off import NoteOff as midi # type: ignore
-from adafruit_midi.note_on import NoteOn as midi # type: ignore
+from adafruit_midi.control_change import ControlChange# type: ignore
+from adafruit_midi.note_off import NoteOff# type: ignore
+from adafruit_midi.note_on import NoteOn# type: ignore
 #                       TX         RX
 uart = busio.UART(board.GP0, board.GP1, baudrate=31250, timeout=0.001)
 midi_in_channel = 1
@@ -30,6 +30,10 @@ print("Default output channel:", midi.out_channel + 1)
 
 while True:
     msg = midi.receive()
-    if msg:
+    if isinstance(msg,NoteOn):
         #midi.send(msg)
-        print(msg)
+        # print(msg)
+        print(msg.note)
+    elif isinstance(msg,NoteOff):
+        #buzzer.duty_cycle = 2**5
+        print("Off")
