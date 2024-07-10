@@ -30,6 +30,8 @@ print("Default output channel:", midi.out_channel + 1)
 
 while True:
     msg = midi.receive()
+    if msg != None:
+        print(msg)
     if isinstance(msg,NoteOn):
         #midi.send(msg)
         # print(msg)

@@ -63,7 +63,7 @@ def glide(note_start,note_end):
     #note one
     synth.release_all_then_press(note)
     for i in range(glide_steps):
-        slid_note = note_start + i*((note_end - note_start)/glide_steps)
+        slid_note = note_start + i*((note_end * note_start)/glide_steps)
         note.frequency = synthio.midi_to_hz(slid_note)
         time.sleep(glide_deltat)
 
