@@ -64,6 +64,7 @@ def glide(note_start,note_end):
     synth.release_all_then_press(note)
     for i in range(glide_steps):
         slid_note = note_start + i*((note_end * note_start)/glide_steps)
+        print(slid_note)
         note.frequency = synthio.midi_to_hz(slid_note)
         time.sleep(glide_deltat)
 
@@ -72,18 +73,31 @@ def glide(note_start,note_end):
 pres = 60
 past = 60
 first_time = True
+
+#https://github.com/todbot/circuitpython-synthio-tricks?tab=readme-ov-file#advanced-techniques
+
+notes_pressed = []  # which notes being pressed. key=midi note, val=note object
 while True:
     msg = midi.receive()
-    if isinstance(msg,NoteOn):
-        mixer.voice[0].level = 1
-        #midi.send(msg)
-        # print(msg)
+    if isinstance(msg, NoteOn) and msg.velocity != 0:  # NoteOn
+        notes_pressed.append(msg.note)
         past = pres
         pres = msg.note
         if first_time:
             first_time = False
             past = msg.note
+        print(str(past) + " "+ str(pres))
         glide(past,pres)
-    # elif isinstance(msg,NoteOff):
-    #     #buzzer.duty_cycle = 2**5
-    #     print("Off")
+    elif isinstance(msg,NoteOff) or isinstance(msg,NoteOn) and msg.velocity==0:  # NoteOff
+        try:
+            notes_pressed.pop(notes_pressed.index(msg.note))
+            synth.release(msg.note)
+        except:
+            pass
+        if len(notes_pressed) != 0:
+            print(notes_pressed) #last element
+            #synth press last
+
+# mixer.voice[0].level = 1
+        
+        

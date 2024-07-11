@@ -2,6 +2,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
+#see here for correct formula
+# #https://gist.github.com/gamblor21/15a430929abf0e10eeaba8a45b01f5a8
+
 SAMPLE_SIZE=512
 SAMPLE_VOLUME=5000
 sin = np.sin(np.linspace(0, 2*np.pi, SAMPLE_SIZE, endpoint=False))
