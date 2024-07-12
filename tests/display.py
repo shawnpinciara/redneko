@@ -3,7 +3,10 @@
 # ESP32-S2 Board: http://educ8s.tv/part/esp32s2
 # OLED DISPLAY: https://educ8s.tv/part/OLED096
 
-import board, busio, displayio, os, terminalio
+import board
+
+
+import busio, displayio, os, terminalio
 import adafruit_displayio_ssd1306
 from adafruit_display_text import label
 
@@ -22,7 +25,7 @@ display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=128, height=64)
 
 # Make the display context
 splash = displayio.Group()
-display.show(splash)
+display.root_group(splash)
 
 color_bitmap = displayio.Bitmap(128, 64, 1)
 color_palette = displayio.Palette(1)

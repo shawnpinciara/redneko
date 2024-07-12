@@ -1,17 +1,16 @@
 
-# SPDX-FileCopyrightText: 2023 John Park and @todbot / Tod Kurt
-#
+# SPDX-FileCopyrightText: 2024 Shawn Pinciara (@shawnpinciara)
 # SPDX-License-Identifier: MIT
 
 import time
-import board # type: ignore
+import board 
 
-import audiomixer # type: ignore
-import synthio # type: ignore
+import audiomixer
+import synthio 
 
 
-# for PWM audio with an RC filter
-# import audiopwmio # type: ignore
+# for PWM audio 
+# import audiopwmio 
 # audio = audiopwmio.PWMAudioOut(board.GP1)
 
 # DAC
@@ -28,27 +27,13 @@ mixer.voice[0].play(synth)
 mixer.voice[0].level = 1
 
 
-def glideTod(note_start,note_end):
-    glide_time = 3
-    glide_steps = 100
-    glide_deltat = glide_time / glide_steps
-    f = synthio.midi_to_hz(note_start)
-    note = synthio.Note(frequency=f)
-    #note one
-    synth.release_all_then_press(note)
-    for i in range(glide_steps):
-        slid_note = note_end + (note_end - note_start) * (i/glide_steps)
-        note.frequency = synthio.midi_to_hz(slid_note)
-        time.sleep(glide_deltat)
-
 def glide(note_start,note_end):
     glide_time = 3
     glide_steps = 100
     glide_deltat = glide_time / glide_steps
     f = synthio.midi_to_hz(note_start)
     note = synthio.Note(frequency=f)
-    #note one
-    synth.release_all_then_press(note)
+    synth.release_all_then_press(note) #for monophonic synth
     for i in range(glide_steps):
         slid_note = note_start + i*((note_end - note_start)/glide_steps)
         note.frequency = synthio.midi_to_hz(slid_note)
