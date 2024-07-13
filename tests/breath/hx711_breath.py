@@ -1,20 +1,23 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022 Erik Hess
+# SPDX-FileCopyrightText: Copyright (c) 2024 Liz Clark for Adafruit Industries
 #
 # SPDX-License-Identifier: MIT
-import board
-import time
-from hx711.hx711_pio import HX711_PIO
+# https://learn.adafruit.com/adafruit-hx711-24-bit-adc/circuitpython
 
-pin_data = board.GP5
-pin_clk = board.GP4
-hx = HX711_PIO(pin_data, pin_clk, tare=True)
+import time
+import board
+import digitalio
+from adafruit_hx711.hx711 import HX711
+from adafruit_hx711.analog_in import AnalogIn
+
+data = digitalio.DigitalInOut(board.GP26)
+data.direction = digitalio.Direction.INPUT
+clock = digitalio.DigitalInOut(board.GP27)
+clock.direction = digitalio.Direction.OUTPUT
+
+hx711 = HX711(data, clock)
+channel_a = AnalogIn(hx711, HX711.CHAN_A_GAIN_128)
+# channel_b = AnalogIn(hx711, HX711.CHAN_B_GAIN_32)
 
 while True:
-    reading = hx.read(5)
-    reading_raw = hx.read_raw()
-    print(
-        "[{: 8.2f} g] [{: 8} raw] offset: {}, scalar: {}".format(
-            reading, reading_raw, hx.offset, hx.scalar
-        )
-    )
-    time.sleep(0.2)
+    print(f"Reading: {channel_a.value}")
+    time.sleep(0.1)
