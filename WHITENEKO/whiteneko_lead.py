@@ -62,9 +62,10 @@ SAMPLE_SIZE = 512
 SAMPLE_VOLUME = 32000  # 0-32767
 wave_sine = np.array(np.sin(np.linspace(0, 2*np.pi, SAMPLE_SIZE, endpoint=False)) * SAMPLE_VOLUME, dtype=np.int16)
 mixer = audiomixer.Mixer(channel_count=1, sample_rate=22050, buffer_size=2048)
-env = synthio.Envelope(attack_time=0.05,release_time=0.05)
+env = synthio.Envelope(attack_time=0.1,release_time=0.05)
 lfo = synthio.LFO(rate=0, scale=0.05)
 synth = synthio.Synthesizer(channel_count=1, sample_rate=22050, envelope=env)
+note = synthio.Note(frequency=220,waveform = wave_sine,bend=lfo,amplitude=0.0)
 audio.play(mixer)
 mixer.voice[0].play(synth)
 mixer.voice[0].level = 1
@@ -72,11 +73,11 @@ mixer.voice[0].level = 1
 #GLIDE
 glide_time = 0.06
 def glide(note_start:int,note_end:int):
-    global wave_sine,lfo,glide_time
+    global wave_sine,lfo,glide_time,note,synth
     glide_steps = 50
     glide_deltat = glide_time / glide_steps
     f = synthio.midi_to_hz(note_start)
-    note = synthio.Note(frequency=f,waveform = wave_sine,bend=lfo)
+    note.frequency = f
     #note one
     synth.release_all_then_press(note)
     for i in range(glide_steps):
@@ -108,6 +109,7 @@ encoder_2 = board.GP4
 encoder_sw = tb.thisButton(board.GP5,True)
 encoder = rotaryio.IncrementalEncoder(encoder_2, encoder_1)
 last_position = None
+
 def encoderRotated(direction,pos):
     global glide_time
     glide_time = mapp(pos,0,10,0.05,0.5)
@@ -118,6 +120,8 @@ def encoderRotated(direction,pos):
 def encoderPushed():
     print("encoder pressed")
 encoder_sw.assignClick(encoderPushed)
+
+
 
 while True:
     # buttons
@@ -134,13 +138,15 @@ while True:
     msg = midi.receive()
     if isinstance(msg, NoteOn) and msg.velocity != 0:  # NoteOn
         notes_pressed.append(msg.note)
+        note.amplitude = mapp(msg.velocity,0,127,0,1)
         pressed_i+=1
+        # if len(notes_pressed)==1: synth.envelope.attack_time = 0.02 #attack
+        # else: synth.envelope.attack_time = 0.1
         if pressed_i==0:
             glide(notes_pressed[0],notes_pressed[0])
         else:
             glide(notes_pressed[pressed_i-1],notes_pressed[pressed_i])
-        if len(notes_pressed)==1:
-            print("attack")
+        
     elif isinstance(msg,NoteOff) or isinstance(msg,NoteOn) and msg.velocity==0:  # NoteOff
         pressed_i-=1
         if notes_pressed.index(msg.note) == len(notes_pressed)-1 and len(notes_pressed)>=2:
@@ -148,6 +154,12 @@ while True:
         notes_pressed.pop(notes_pressed.index(msg.note))
         if len(notes_pressed) == 0:
             synth.release_all()
+    elif isinstance(msg,ControlChange):
+        if msg.value < 20:
+            note.bend.rate = 0
+        else:
+            lfo_map = mapp(msg.value,0,127,0,5)
+            note.bend.rate = lfo_map
          
         
             
